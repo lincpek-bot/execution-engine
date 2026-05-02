@@ -1,4 +1,4 @@
-const CACHE_NAME = 'engine-v3';
+const CACHE_NAME = 'engine-v4';
 const ASSETS = ['./index.html', './404.html', './styles.css', './app.js', './manifest.json', './data.json'];
 
 self.addEventListener('install', e => {

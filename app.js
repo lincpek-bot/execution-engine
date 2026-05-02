@@ -58,18 +58,28 @@ function pullFromServer() {
 }
 
 function mergeServerState(serverState) {
-  if (serverState && serverState.days && Object.keys(serverState.days).length > 0) {
-    const localTasks = Object.values(state.days).reduce((sum, d) => sum + (d.tasks ? d.tasks.length : 0), 0);
-    const serverTasks = Object.values(serverState.days).reduce((sum, d) => sum + (d.tasks ? d.tasks.length : 0), 0);
-    if (serverTasks > localTasks || localTasks === 0) {
-      state = serverState;
-      localStorage.setItem(DB_KEY, JSON.stringify(state));
-    }
+  if (!serverState || !serverState.days) return;
+  if (Object.keys(serverState.days).length === 0) return;
+
+  const localTasks = Object.values(state.days).reduce((sum, d) => sum + (d.tasks ? d.tasks.length : 0), 0);
+
+  // Fresh install or server has more data — use server state
+  if (localTasks === 0) {
+    state = serverState;
+    localStorage.setItem(DB_KEY, JSON.stringify(state));
+    return;
+  }
+
+  const serverTasks = Object.values(serverState.days).reduce((sum, d) => sum + (d.tasks ? d.tasks.length : 0), 0);
+  if (serverTasks > localTasks) {
+    state = serverState;
+    localStorage.setItem(DB_KEY, JSON.stringify(state));
   }
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function getDay(date) {
