@@ -46,12 +46,11 @@ function syncToServer() {
 
 // On load, try server API first, fall back to static data.json
 function pullFromServer() {
-  fetch(`./api/state`)
+  return fetch(`./api/state`)
     .then(r => { if (!r.ok) throw new Error('no api'); return r.json(); })
     .then(mergeServerState)
     .catch(() => {
-      // Fallback: load static data.json (GitHub Pages)
-      fetch(`./data.json`)
+      return fetch(`./data.json`)
         .then(r => { if (!r.ok) throw new Error('no data'); return r.json(); })
         .then(mergeServerState)
         .catch(() => {});
@@ -60,12 +59,11 @@ function pullFromServer() {
 
 function mergeServerState(serverState) {
   if (serverState && serverState.days && Object.keys(serverState.days).length > 0) {
-    const localDays = Object.keys(state.days).length;
-    const serverDays = Object.keys(serverState.days).length;
-    if (serverDays > localDays || localDays === 0) {
+    const localTasks = Object.values(state.days).reduce((sum, d) => sum + (d.tasks ? d.tasks.length : 0), 0);
+    const serverTasks = Object.values(serverState.days).reduce((sum, d) => sum + (d.tasks ? d.tasks.length : 0), 0);
+    if (serverTasks > localTasks || localTasks === 0) {
       state = serverState;
       localStorage.setItem(DB_KEY, JSON.stringify(state));
-      render();
     }
   }
 }
@@ -942,13 +940,13 @@ function escHtml(str) {
 // INIT
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
   });
-  pullFromServer();
+  await pullFromServer();
   switchScreen('today');
 });
