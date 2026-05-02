@@ -1,0 +1,29 @@
+{
+  "days": {
+    "2026-05-01": {
+      "energy": "",
+      "ocdImpact": "",
+      "recoveryLevel": 0,
+      "tasks": [
+        {"id": "1", "name": "MA121 Final Study — HW1-9 review + post-midterm-2 focus", "tier": "big", "status": "pending"},
+        {"id": "2", "name": "Study Abroad — submit flight form (overdue)", "tier": "med", "status": "pending"},
+        {"id": "3", "name": "Upload headshot to London Personal Page", "tier": "med", "status": "pending"},
+        {"id": "4", "name": "SS103 Final — start study guide review", "tier": "med", "status": "pending"},
+        {"id": "5", "name": "Salem Interdisciplinary Reflection — check if SS103 version needed", "tier": "small", "status": "pending"},
+        {"id": "6", "name": "Prof. Marr office hours plan — map what to ask Mon", "tier": "small", "status": "pending"},
+        {"id": "7", "name": "MyLab HW9 — check if late submit still open", "tier": "small", "status": "pending"},
+        {"id": "8", "name": "Move-out prep — start packing non-essentials", "tier": "small", "status": "pending"},
+        {"id": "9", "name": "Fitness OS — 30 min polish session", "tier": "small", "status": "pending"}
+      ],
+      "notes": "",
+      "wins": [],
+      "misses": []
+    }
+  },
+  "achievements": [],
+  "patterns": [],
+  "settings": {
+    "weekStart": "monday"
+  },
+  "version": 2
+}
