@@ -4,13 +4,13 @@
 // Setup:
 // 1. Install Scriptable from App Store
 // 2. Create new script, paste this code
-// 3. Set SERVER_IP to your Mac's local IP
-// 4. Add Scriptable widget to home screen → select this script
+// 3. Add Scriptable widget to home screen → select this script
 // ============================================================
 
 const SERVER_IP = '10.193.178.114'; // Your Mac's local IP
 const SERVER_PORT = 8080;
-const API_URL = `http://${SERVER_IP}:${SERVER_PORT}/api/widget`;
+const LOCAL_URL = `http://${SERVER_IP}:${SERVER_PORT}/api/widget`;
+const PUBLIC_URL = 'https://lincpek-bot.github.io/execution-engine/data.json';
 
 // Colors
 const BG = new Color('#0d0d0d');
@@ -23,13 +23,75 @@ const TEXT = new Color('#e8e8e8');
 const DIM = new Color('#888888');
 
 async function fetchData() {
+  // Try local server first (fast, same WiFi)
   try {
-    const req = new Request(API_URL);
-    req.timeoutInterval = 5;
-    return await req.loadJSON();
+    const req = new Request(LOCAL_URL);
+    req.timeoutInterval = 3;
+    const data = await req.loadJSON();
+    if (data && data.bigTask !== undefined) return data;
+  } catch (e) {}
+
+  // Fall back to public GitHub Pages data.json
+  try {
+    const req = new Request(PUBLIC_URL);
+    req.timeoutInterval = 10;
+    const raw = await req.loadJSON();
+    return parsePublicData(raw);
   } catch (e) {
     return null;
   }
+}
+
+function parsePublicData(raw) {
+  const now = new Date();
+  const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  const dayData = raw.days && raw.days[dateKey];
+  if (!dayData || !dayData.tasks || dayData.tasks.length === 0) {
+    return { date: dateKey, bigTask: '', bigTaskDone: false, medTasks: [], todayDone: 0, todayTotal: 0, weekPct: calcWeekPct(raw), energy: '', recoveryLevel: 0 };
+  }
+
+  const tasks = dayData.tasks;
+  const bigTaskEntry = tasks.find(t => t.tier === 'big');
+  const medTasks = tasks.filter(t => t.tier === 'med').map(t => ({ name: t.name, done: t.status === 'done' }));
+  const todayTotal = tasks.length;
+  const todayDone = tasks.filter(t => t.status === 'done').length;
+
+  return {
+    date: dateKey,
+    bigTask: bigTaskEntry ? bigTaskEntry.name : '',
+    bigTaskDone: bigTaskEntry ? bigTaskEntry.status === 'done' : false,
+    medTasks,
+    todayDone,
+    todayTotal,
+    weekPct: calcWeekPct(raw),
+    energy: dayData.energy || '',
+    recoveryLevel: dayData.recoveryLevel || 0
+  };
+}
+
+function calcWeekPct(raw) {
+  if (!raw.days) return 0;
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+
+  let totalTasks = 0;
+  let doneTasks = 0;
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const day = raw.days[key];
+    if (day && day.tasks) {
+      totalTasks += day.tasks.length;
+      doneTasks += day.tasks.filter(t => t.status === 'done').length;
+    }
+  }
+
+  return totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 }
 
 function createSmallWidget(data) {
@@ -47,7 +109,6 @@ function createSmallWidget(data) {
     return w;
   }
 
-  // Header
   const header = w.addText('BIG TASK');
   header.font = Font.boldSystemFont(10);
   header.textColor = ACCENT;
@@ -55,7 +116,6 @@ function createSmallWidget(data) {
 
   w.addSpacer(6);
 
-  // Big task name
   const task = w.addText(data.bigTask);
   task.font = Font.semiboldSystemFont(15);
   task.textColor = data.bigTaskDone ? GREEN : TEXT;
@@ -63,7 +123,6 @@ function createSmallWidget(data) {
 
   w.addSpacer(8);
 
-  // Progress
   const pct = data.todayTotal > 0 ? `${data.todayDone}/${data.todayTotal}` : '0/0';
   const prog = w.addText(`Today: ${pct} done`);
   prog.font = Font.regularSystemFont(11);
@@ -71,7 +130,6 @@ function createSmallWidget(data) {
 
   w.addSpacer(4);
 
-  // Weekly
   const weekColor = data.weekPct >= 70 ? GREEN : data.weekPct >= 40 ? YELLOW : RED;
   const week = w.addText(`Week: ${data.weekPct}%`);
   week.font = Font.mediumSystemFont(11);
@@ -86,13 +144,12 @@ function createMediumWidget(data) {
   w.setPadding(14, 16, 14, 16);
 
   if (!data) {
-    const msg = w.addText('Engine offline — check server');
+    const msg = w.addText('Engine offline');
     msg.font = Font.mediumSystemFont(14);
     msg.textColor = DIM;
     return w;
   }
 
-  // Top row
   const topStack = w.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
@@ -111,7 +168,6 @@ function createMediumWidget(data) {
 
   topStack.addSpacer();
 
-  // Weekly badge
   const weekColor = data.weekPct >= 70 ? GREEN : data.weekPct >= 40 ? YELLOW : RED;
   const badge = topStack.addText(`${data.weekPct}%`);
   badge.font = Font.boldMonospacedSystemFont(20);
@@ -119,13 +175,12 @@ function createMediumWidget(data) {
 
   w.addSpacer(10);
 
-  // Big Task
   if (data.bigTask) {
     const bigStack = w.addStack();
     bigStack.layoutHorizontally();
     bigStack.centerAlignContent();
 
-    const dot = bigStack.addText(data.bigTaskDone ? '●' : '○');
+    const dot = bigStack.addText(data.bigTaskDone ? '\u25CF' : '\u25CB');
     dot.font = Font.mediumSystemFont(12);
     dot.textColor = data.bigTaskDone ? GREEN : ACCENT;
     bigStack.addSpacer(6);
@@ -138,14 +193,13 @@ function createMediumWidget(data) {
 
   w.addSpacer(6);
 
-  // Medium tasks
   if (data.medTasks && data.medTasks.length > 0) {
     for (const t of data.medTasks.slice(0, 3)) {
       const taskStack = w.addStack();
       taskStack.layoutHorizontally();
       taskStack.centerAlignContent();
 
-      const check = taskStack.addText(t.done ? '●' : '○');
+      const check = taskStack.addText(t.done ? '\u25CF' : '\u25CB');
       check.font = Font.regularSystemFont(9);
       check.textColor = t.done ? GREEN : DIM;
       taskStack.addSpacer(6);
@@ -161,7 +215,6 @@ function createMediumWidget(data) {
 
   w.addSpacer(4);
 
-  // Footer: energy + OCD
   if (data.energy || data.recoveryLevel > 0) {
     const footStack = w.addStack();
     footStack.layoutHorizontally();
