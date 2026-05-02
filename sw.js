@@ -1,5 +1,5 @@
-const CACHE_NAME = 'engine-v2';
-const ASSETS = ['./index.html', './styles.css', './app.js', './manifest.json', './data.json'];
+const CACHE_NAME = 'engine-v3';
+const ASSETS = ['./index.html', './404.html', './styles.css', './app.js', './manifest.json', './data.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
