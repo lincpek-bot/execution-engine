@@ -35,7 +35,7 @@ let syncTimeout = null;
 function syncToServer() {
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
-    const serverUrl = `${window.location.origin}/api/sync`;
+    const serverUrl = `./api/sync`;
     fetch(serverUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -46,12 +46,12 @@ function syncToServer() {
 
 // On load, try server API first, fall back to static data.json
 function pullFromServer() {
-  fetch(`${window.location.origin}/api/state`)
+  fetch(`./api/state`)
     .then(r => { if (!r.ok) throw new Error('no api'); return r.json(); })
     .then(mergeServerState)
     .catch(() => {
       // Fallback: load static data.json (GitHub Pages)
-      fetch(`${window.location.origin}/data.json`)
+      fetch(`./data.json`)
         .then(r => { if (!r.ok) throw new Error('no data'); return r.json(); })
         .then(mergeServerState)
         .catch(() => {});
