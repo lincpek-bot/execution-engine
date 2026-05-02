@@ -44,22 +44,30 @@ function syncToServer() {
   }, 500); // Debounce 500ms
 }
 
-// On load, also try to pull from server (in case widget/other device wrote)
+// On load, try server API first, fall back to static data.json
 function pullFromServer() {
   fetch(`${window.location.origin}/api/state`)
-    .then(r => r.json())
-    .then(serverState => {
-      if (serverState && serverState.days && Object.keys(serverState.days).length > 0) {
-        // Merge: server wins for days we don't have locally
-        const localDays = Object.keys(state.days).length;
-        const serverDays = Object.keys(serverState.days).length;
-        if (serverDays > localDays) {
-          state = serverState;
-          localStorage.setItem(DB_KEY, JSON.stringify(state));
-        }
-      }
-    })
-    .catch(() => {});
+    .then(r => { if (!r.ok) throw new Error('no api'); return r.json(); })
+    .then(mergeServerState)
+    .catch(() => {
+      // Fallback: load static data.json (GitHub Pages)
+      fetch(`${window.location.origin}/data.json`)
+        .then(r => { if (!r.ok) throw new Error('no data'); return r.json(); })
+        .then(mergeServerState)
+        .catch(() => {});
+    });
+}
+
+function mergeServerState(serverState) {
+  if (serverState && serverState.days && Object.keys(serverState.days).length > 0) {
+    const localDays = Object.keys(state.days).length;
+    const serverDays = Object.keys(serverState.days).length;
+    if (serverDays > localDays || localDays === 0) {
+      state = serverState;
+      localStorage.setItem(DB_KEY, JSON.stringify(state));
+      render();
+    }
+  }
 }
 
 function today() {

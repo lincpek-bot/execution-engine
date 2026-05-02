@@ -197,11 +197,11 @@ const data = await fetchData();
 
 if (config.widgetFamily === 'medium' || config.widgetFamily === 'large') {
   const widget = createMediumWidget(data);
-  widget.url = `http://${SERVER_IP}:${SERVER_PORT}`;
+  widget.url = 'https://lincpek-bot.github.io/execution-engine/';
   Script.setWidget(widget);
 } else {
   const widget = createSmallWidget(data);
-  widget.url = `http://${SERVER_IP}:${SERVER_PORT}`;
+  widget.url = 'https://lincpek-bot.github.io/execution-engine/';
   Script.setWidget(widget);
 }
 
